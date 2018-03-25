@@ -14,7 +14,7 @@ $ cd ..
 
 ### 2. Run a backtest
 ```
-$ ./test.py market_data upbit.candles.csv
+$ ./test.py market_data/upbit.candles.csv
 ```
 
 ### 3. Example result

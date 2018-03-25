@@ -114,9 +114,22 @@ class Breakout():
                 if shifted_data[idx][i][0] >= start_time + 3600 * 24:
                     # emit a chunk
                     candle = self.__candle(start_time, chunk)
+
+                    # gap handling
+                    if len(chunk) < 24:
+                        C_new = shifted_data[idx][i][2]
+                        ts, tf, O, H, L, C, V = candle
+                        candle = (ts, tf, O, H, L, C_new, V)
+
                     shifted_candle[idx].append(candle)
                     chunk = [shifted_data[idx][i]]
-                    start_time = start_time + 3600 * 24
+
+                    # gap handling
+                    j = 0
+                    while True:
+                        start_time = start_time + 3600 * 24
+                        if start_time + 3600 * 24 > chunk[0][0]:
+                            break
                     assert (start_time / 3600) % 24 == idx
                 else:
                     chunk.append(shifted_data[idx][i])
@@ -125,7 +138,7 @@ class Breakout():
             for i in range(len(shifted_candle[idx])):
                 if i == 0:
                     continue
-                assert (shifted_candle[idx][i-1][0] + 86400) == shifted_candle[idx][i][0]
+                assert (shifted_candle[idx][i][0] - shifted_candle[idx][i-1][0]) % 86400 == 0
         self.shifted_candle = shifted_candle
 
     def __breakout(self, name, fee=0.0015, breakout_coefficient=0.05,
@@ -165,7 +178,7 @@ class Breakout():
                 # the moving average.
                 if ma_filtering and (C_yday < ma_price):
                     continue
-                
+
                 if noise_filtering or adaptive_coeff:
                     ma_noise = []
                     for v in self.shifted_candle[idx][i-noise_periods:i]:
@@ -202,7 +215,7 @@ class Breakout():
                     profit = (sell_price - buy_price) / buy_price
                     profit *= x
                     profits[idx].append((ts_yday, 1+profit))
-            
+
             # terminate the loop here if timeframe_distribution is disabled.
             if not timeframe_distribution:
                 break
